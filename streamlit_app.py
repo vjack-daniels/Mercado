@@ -7,10 +7,12 @@ import json
 import hashlib
 
 # Initialize Firebase
+firebase_credentials = json.loads(st.secrets["firebase_credentials"])
+cred = credentials.Certificate(firebase_credentials)
+
 if not firebase_admin._apps:
-    firebase_credentials = json.loads(st.secrets["firebase_credentials"])
-    cred = credentials.Certificate(firebase_credentials)
     firebase_admin.initialize_app(cred)
+    
 db = firestore.client()
 
 # Helper Functions

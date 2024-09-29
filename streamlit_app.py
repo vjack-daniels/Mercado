@@ -1,117 +1,96 @@
-# app.py
-
 import streamlit as st
-import firebase_admin
-from firebase_admin import credentials, firestore, auth
-import json
-import hashlib
 
-# Initialize Firebase
-firebase_credentials = json.loads(st.secrets["firebase_credentials"])
-cred = credentials.Certificate(firebase_credentials)
+# Hardcoded username and password (can be extended)
+USER_CREDENTIALS = {
+    "dude": "duude",
+    "user2": "password2",
+    "admin": "admin123"
+}
 
-if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred)
-    
-db = firestore.client()
+# Function to handle login
+def login_user(username, password):
+    if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
+        return True
+    else:
+        return False
 
-# Helper Functions
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def signup(email, password, name):
-    try:
-        user = auth.create_user(email=email, password=password)
-        # Add user to Firestore
-        db.collection('users').document(user.uid).set({
-            'name': name,
-            'email': email,
-            'investments': []
-        })
+# Function to handle signup (this is a simple local signup)
+def signup_user(username, password, name):
+    if username in USER_CREDENTIALS:
+        st.error("User already exists.")
+        return False
+    else:
+        # Simulate adding the user to a local "database"
+        USER_CREDENTIALS[username] = password
         st.success("User created successfully!")
-    except Exception as e:
-        st.error(f"Error creating user: {e}")
+        return True
 
-def login(email, password):
-    try:
-        users = db.collection('users').where('email', '==', email).get()
-        if users:
-            user_doc = users[0]
-            # Simulate password check
-            # In reality, use Firebase client SDK for proper auth
-            return user_doc.id, user_doc.to_dict()
-        else:
-            st.error("User not found")
-            return None, None
-    except Exception as e:
-        st.error(f"Error logging in: {e}")
-        return None, None
-
-# Sidebar Navigation
-st.sidebar.title("Navigation")
-auth_option = st.sidebar.selectbox("Choose Option", ["Login", "Sign Up"])
-
-if auth_option == "Sign Up":
-    st.header("Create an Account")
-    name = st.text_input("Name")
-    email = st.text_input("Email")
-    password = st.text_input("Password", type="password")
-    if st.button("Sign Up"):
-        signup(email, password, name)
-
-elif auth_option == "Login":
-    st.header("Login to Your Account")
-    email = st.text_input("Email")
+# Function to show the login form
+def login():
+    st.subheader("Login to Your Account")
+    username = st.text_input("Username")
     password = st.text_input("Password", type="password")
     if st.button("Login"):
-        user_id, user_info = login(email, password)
-        if user_id:
-            st.session_state['user_id'] = user_id
-            st.session_state['user_info'] = user_info
-            st.success("Logged in successfully!")
+        if login_user(username, password):
+            st.session_state["logged_in"] = True
+            st.session_state["username"] = username
+            st.success(f"Logged in as {username}")
+        else:
+            st.error("Invalid username or password")
 
-# Main App
-if 'user_id' in st.session_state:
-    st.sidebar.success(f"Logged in as {st.session_state['user_info']['name']}")
+# Function to show the signup form
+def signup():
+    st.subheader("Create an Account")
+    name = st.text_input("Name")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    if st.button("Sign Up"):
+        if signup_user(username, password, name):
+            st.session_state["logged_in"] = True
+            st.session_state["username"] = username
+
+# Function to show the dashboard
+def show_dashboard():
+    st.sidebar.success(f"Logged in as {st.session_state['username']}")
     main_option = st.sidebar.selectbox("Go to", ["Browse Businesses", "My Dashboard"])
     
     if main_option == "Browse Businesses":
         st.header("Available Businesses for Investment")
-        businesses = db.collection('businesses').stream()
+        businesses = [
+            {"name": "Tech Startup", "description": "A new AI platform.", "category": "Technology", "fund_needed": 100000, "fund_raised": 50000},
+            {"name": "Green Energy Co.", "description": "Developing solar panels.", "category": "Energy", "fund_needed": 200000, "fund_raised": 120000},
+        ]
         for biz in businesses:
-            biz_data = biz.to_dict()
-            st.subheader(biz_data['name'])
-            st.write(biz_data['description'])
-            st.write(f"Category: {biz_data['category']}")
-            st.write(f"Funds Needed: ${biz_data['fund_needed']}")
-            st.write(f"Funds Raised: ${biz_data['fund_raised']}")
-            investment_amount = st.number_input(f"Invest in {biz_data['name']}", min_value=50, step=50, key=biz.id)
-            if st.button(f"Invest ${investment_amount} in {biz_data['name']}", key=f"invest_{biz.id}"):
-                # Simulate investment
-                new_fund_raised = biz_data['fund_raised'] + investment_amount
-                db.collection('businesses').document(biz.id).update({'fund_raised': new_fund_raised})
-                
-                # Update user's investments
-                investments = st.session_state['user_info'].get('investments', [])
-                investments.append({
-                    'business_id': biz.id,
-                    'business_name': biz_data['name'],
-                    'amount': investment_amount
-                })
-                db.collection('users').document(st.session_state['user_id']).update({'investments': investments})
-                st.success(f"Successfully invested ${investment_amount} in {biz_data['name']}!")
-                
-                # Update session state
-                st.session_state['user_info']['investments'] = investments
+            st.subheader(biz['name'])
+            st.write(biz['description'])
+            st.write(f"Category: {biz['category']}")
+            st.write(f"Funds Needed: ${biz['fund_needed']}")
+            st.write(f"Funds Raised: ${biz['fund_raised']}")
+            investment_amount = st.number_input(f"Invest in {biz['name']}", min_value=50, step=50, key=biz['name'])
+            if st.button(f"Invest ${investment_amount} in {biz['name']}", key=f"invest_{biz['name']}"):
+                st.success(f"Successfully invested ${investment_amount} in {biz['name']}!")
 
     elif main_option == "My Dashboard":
         st.header("My Investments")
-        investments = st.session_state['user_info'].get('investments', [])
-        if investments:
-            for inv in investments:
-                st.subheader(inv['business_name'])
-                st.write(f"Amount Invested: ${inv['amount']}")
-        else:
-            st.write("You haven't made any investments yet.")
+        # For this demo, we are not storing investments persistently.
+        st.write("You haven't made any investments yet (local demo).")
+
+    # Add logout button
+    if st.button("Logout"):
+        st.session_state["logged_in"] = False
+        st.success("Successfully logged out.")
+
+# Main app logic
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
+
+st.sidebar.title("Navigation")
+auth_option = st.sidebar.selectbox("Choose Option", ["Login", "Sign Up"])
+
+if st.session_state["logged_in"]:
+    show_dashboard()
 else:
-    st.info("Please log in or sign up to continue.")
+    if auth_option == "Login":
+        login()
+    elif auth_option == "Sign Up":
+        signup()

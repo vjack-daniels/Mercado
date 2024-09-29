@@ -1,9 +1,6 @@
 import streamlit as st
 from PIL import Image
 
-# Load image for branding (optional)
-logo = Image.open("logo.png")
-
 # Hardcoded username and password (can be extended)
 USER_CREDENTIALS = {
     "dude": "duude",
@@ -113,7 +110,6 @@ st.sidebar.title("🌐 Navigation")
 auth_option = st.sidebar.selectbox("Choose Option", ["Login", "Sign Up"])
 
 # Branding at the top
-st.image(logo, width=100)  # Optionally show a logo
 st.title("Welcome to the Business Investment Platform")
 
 if st.session_state["logged_in"]:

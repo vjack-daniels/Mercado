@@ -1,5 +1,4 @@
 import streamlit as st
-from PIL import Image
 
 # Hardcoded username and password (can be extended)
 USER_CREDENTIALS = {
@@ -57,7 +56,6 @@ def signup():
 # Function to show the dashboard
 def show_dashboard():
     st.sidebar.success(f"👤 Logged in as {st.session_state['username']}")
-    st.sidebar.image(logo, use_column_width=True)  # Show logo in sidebar if applicable
     main_option = st.sidebar.selectbox("Go to", ["Browse Businesses", "My Dashboard"])
 
     if main_option == "Browse Businesses":
@@ -109,7 +107,7 @@ st.set_page_config(
 st.sidebar.title("🌐 Navigation")
 auth_option = st.sidebar.selectbox("Choose Option", ["Login", "Sign Up"])
 
-# Branding at the top
+# App header
 st.title("Welcome to the Business Investment Platform")
 
 if st.session_state["logged_in"]:

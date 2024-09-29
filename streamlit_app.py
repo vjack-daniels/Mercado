@@ -73,10 +73,16 @@ def show_dashboard():
             st.write(f"**Funds Needed**: ${biz['fund_needed']}")
             st.write(f"**Funds Raised**: ${biz['fund_raised']}")
             
-            # Investment section in a columns layout
+            # Investment section using a slider
             investment_col, button_col = st.columns([2, 1])
             with investment_col:
-                investment_amount = st.number_input(f"💸 Invest in {biz['name']}", min_value=50, step=50, key=biz['name'])
+                investment_amount = st.slider(
+                    f"💸 Invest in {biz['name']}",
+                    min_value=50,
+                    max_value=biz['fund_needed'] - biz['fund_raised'],
+                    step=50,
+                    key=biz['name']
+                )
             with button_col:
                 if st.button(f"💰 Invest ${investment_amount}", key=f"invest_{biz['name']}", use_container_width=True):
                     st.success(f"🎉 Successfully invested ${investment_amount} in {biz['name']}!")
@@ -85,12 +91,10 @@ def show_dashboard():
         st.header("📊 My Investments")
         st.info("You haven't made any investments yet (local demo).")
 
-    # Add logout button
-    logout_col, _ = st.columns([1, 3])
-    with logout_col:
-        if st.button("Logout", use_container_width=True):
-            st.session_state["logged_in"] = False
-            st.success("✅ Successfully logged out.")
+    # Add logout button in the sidebar
+    if st.sidebar.button("Logout"):
+        st.session_state["logged_in"] = False
+        st.success("✅ Successfully logged out.")
 
 # Main app logic
 if "logged_in" not in st.session_state:
